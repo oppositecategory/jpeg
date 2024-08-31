@@ -1,11 +1,16 @@
 from collections import Counter
 
 class PriorityQueue:
+    # NOTE: Our queue will always work on fixed size arrays
+    # of at most 64 elements coming from 8x8 block matrices.
+    # Hence running time isn't bottlenecked by queue and we
+    # implement it in array and not by heap for log complexity.
     def __init__(self, data):
       self.queue = dict(Counter(data))
 
     def insert(self, node, frequency):
       self.queue[node] = frequency
+      #print(self.queue)
 
     def pull(self):
       key = min(self.queue,key=self.queue.get)

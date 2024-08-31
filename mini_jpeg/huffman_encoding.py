@@ -1,4 +1,4 @@
-from data_structures import PriorityQueue, Node
+from .data_structures import PriorityQueue, Node
 
 class HuffmanEncoder:
   def __init__(self, data):
@@ -9,27 +9,38 @@ class HuffmanEncoder:
     self.codes = self.depth_first_traverse()
 
   def generate_tree(self,queue):
+    i = 0
     while len(queue) > 1:
-      print(queue.queue)
       x_priority, x = queue.pull()
       y_priority, y = queue.pull()
+      #print(x_priority,y_priority)
 
-      z = Node(data=None,left=x,right=y)
+      # NOTE: I give the node a placeholder data string 
+      # so the Python can distinguish nodes. Otherwise
+      # it overwrites the nodes in insertion due to same 
+      # hash of None.
+      z = Node(data=f'{i}',left=x,right=y)
       x.set_parent(z)
       y.set_parent(z)
       queue.insert(z,x_priority + y_priority)
-    print(queue.queue)
-    return queue.pull()[1]
+      i+=1
+
+    root = queue.pull()[1]
+    return root
 
   def depth_first_traverse(self):
     node = self.root
     codes = {}
     path = ''
     flag = True
+    if isinstance(node.data, tuple):
+      return {node.data:'0'}
+
     while flag:
       node.set_visited()
       left = node.get_left()
       right = node.get_right()
+
 
       if node.is_leaf():
         codes[node.get_data()] = path
