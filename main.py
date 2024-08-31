@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from bitarray import bitarray
 
-import time
+import struct
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed   
 import os
@@ -14,26 +14,36 @@ from mini_jpeg.utils import *
 
 NUM_THREADS = os.cpu_count()
 
-def save_jpeg_to_file(filename, encoded_DC, encoded_AC, huffman_tables):
+def save_data_to_disk(filename, encoded_DC, encoded_AC, huffman_tables):
     with open(filename, 'wb') as file:
         # Write SOI marker
         file.write(b'\xFF\xD8')
                 
-        # Write DHT segment
-        file.write(b'\xFF\xC4')  # DHT marker
+        # AC frequencies segment
+        file.write(b'\xFF\xC4') 
         for i,block in enumerate(encoded_AC):
            file.write(b'B\n') 
            for frequency in block:
-              raw_data = int(frequency,2).to_bytes((len(frequency)+7)//8,byteorder='big')
-              file.write(raw_data)
+              freq_bytes = int(frequency,2).to_bytes((len(frequency)+7)//8,byteorder='big')
+              file.write(freq_bytes)
 
-        file.write(len(huffman_tables).to_bytes(2, 'big'))  # Length of DHT segment
-        file.write(huffman_tables)
-        
-        # Write SOS segment
-        file.write(b'\xFF\xDA')  # SOS marker
+        # Huffman tables segment
+        file.write(len(huffman_tables).to_bytes(2, 'big'))  
+        for table in huffman_tables:
+          file.write(b'\xC3')
+          for key,value in table.items():
+             key_bytes = struct.pack('HH',*key) 
+             value_bytes = int(value,2).to_bytes((len(value)+7)//8,byteorder='big')
+
+             file.write(key_bytes)
+             file.write(b"\x3A")
+             file.write(value_bytes)
+
+        # DC frequencies segment
         file.write(len(encoded_DC).to_bytes(2, 'big'))  # Length of SOS segment
-        file.write(encoded_DC)
+        for diff in encoded_DC:
+          packed_diff = struct.pack('b',diff)
+          file.write(packed_diff)
         
         # Write EOI marker
         file.write(b'\xFF\xD9')
@@ -95,16 +105,15 @@ def process_image(path):
 
    DC_differences = DC_differences.astype(np.int8)
 
-   
+
    filename = path.split('.')[0] + '_compressed'
    dist = [len(block) for block in AC_coeffs]
    ratio = (round(sum(dist) / (len(blocks)*64),2))*100
-   print(f"Total number of numbers to write to disk: {sum(dist)} instead of {len(blocks)*64}. ")
    print(f"Compression ratio: {ratio}%")
-   plt.hist(dist)
-   plt.title("Histogram of number of codes per block.");
+   save_data_to_disk(filename,DC_differences,AC_coeffs,huffman_tables)
+   plt.hist(dist,bins=30)
+   plt.title("Distribution of number of codes among blocks");
    plt.show();
-   save_jpeg_to_file(filename,DC_differences,AC_coeffs,huffman_tables)
    
 
 
