@@ -1,0 +1,19 @@
+import numpy as np
+
+
+# Creates the DCT basis matrices. 
+# (1) memory consumption.
+# G is a 3-D tensor that contains all the 2-D basis matrices for a given 8x8 block.
+# The i entry in G corresponds to the transformation for the (i//8,i%8) frequency.
+DCT = lambda u,v: np.array([
+    [np.cos((2*x+1)*u*np.pi * 1/16)*np.cos((2*y+1)*v*np.pi * 1/16) for x in range(8)]
+    for y in range(8)]
+)
+G = np.array([DCT(k//8,k%8) for k in range(64)])
+ALPHA = lambda u: 1/np.sqrt(2) if u == 0 else 1
+MASKS= np.array([ALPHA(i//8)*ALPHA(i%8) for i in range(64)])
+
+def vectorized_2D_DCT(X):
+  block = np.einsum('ijk,jk->i',G,X)
+  block = 0.25 * (block * MASKS)
+  return block.reshape(8,8).T
