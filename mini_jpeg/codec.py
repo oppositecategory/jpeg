@@ -20,13 +20,14 @@ def encode_JPEG_format(filename, encoded_DC, encoded_AC, huffman_tables):
         for table in huffman_tables:
             file.write(b'\xFF\xC3')
             for key,value in table.items():
-                key_bytes = struct.pack('BB',*key) 
+                key_bytes = struct.pack('>BB',*key) 
                 value_bytes = int(value,2).to_bytes((len(value)+7)//8,byteorder='big')
                 bytes.append((len(value)+7)//8)
 
                 file.write(key_bytes)
                 file.write(b"\x3A")
                 file.write(value_bytes)
+            
         
         # AC frequencies segment
         file.write(b'\xFF\xC5')
@@ -40,7 +41,7 @@ def encode_JPEG_format(filename, encoded_DC, encoded_AC, huffman_tables):
         # DC frequencies segment
         file.write(b'\xFF\xC9')  
         for diff in encoded_DC:
-            packed_diff = struct.pack('b',diff)
+            packed_diff = struct.pack('>b',diff)
             file.write(packed_diff)
         
         # Write EOI marker
@@ -57,15 +58,15 @@ def decode_JPEG_format(filename):
     while tables_num < blocks_num:
         table = {}
         while current not in FLAGS.values():
-            num_zeros, size, _, code = struct.unpack_from('<BBBB',
+            num_zeros, size, _, code = struct.unpack_from('>BBBB',
                                         raw_binary,
                                         offset=bytes_read)
             RLE = (num_zeros, size)
-            table[RLE] = code
+            table[RLE] = str(bin(code))
             bytes_read +=4
             current = struct.unpack_from('>H', 
-                                    raw_binary,
-                                        offset=bytes_read)[0]
+                                         raw_binary,
+                                         offset=bytes_read)[0]
         
         tables_num+=1
         bytes_read+=2
@@ -73,6 +74,7 @@ def decode_JPEG_format(filename):
         current = struct.unpack_from('>H', 
                                      raw_binary,
                                      offset=bytes_read+2)[0]
+
     
     current = struct.unpack_from('>H',
                                  raw_binary,
@@ -84,7 +86,7 @@ def decode_JPEG_format(filename):
             AC_freq = struct.unpack_from('>B', 
                                          raw_binary,
                                          offset=bytes_read)[0]
-            block.append(AC_freq)
+            block.append(bin(AC_freq))
 
             bytes_read+=1
             current = struct.unpack_from('>H', 
@@ -109,7 +111,7 @@ def decode_JPEG_format(filename):
         bytes_read+=1
     
     block = encoded_AC[0]
-    print(block)   
+    print(block)
 
 
 

@@ -56,7 +56,7 @@ def run_length_encoding(block : np.ndarray):
   #codes.append(EOB)
   return codes, indices
 
-def block_splitting(img : np.ndarray):
+def pad_and_block(img : np.ndarray):
   """ Function splits our image into chunks of 8x8 sub-matrices.
       If image's size isn't integer multiples of 8 we pad with the edges values.
   """
@@ -65,6 +65,16 @@ def block_splitting(img : np.ndarray):
   A[:M,:N] = img.copy()
   A[:M, N:] =  np.broadcast_to(A[:M,N-1,None],(M,N%8))
   A[M:, ::] = np.broadcast_to(A[M:,::],(M%8,N))
+  blocks = A.reshape(-1,8,8)
+  return blocks
+
+def crop_and_block(img : np.ndarray):
+  """ Function splits our image into chunks of 8x8 sub-matrices.
+      If image's size isn't integer multiples of 8 we crop it.
+  """
+  M,N = img.shape
+  M1, N1 = M - (M%8), N - (N%8)
+  A = img[:M1, :N1]
   blocks = A.reshape(-1,8,8)
   return blocks
 

@@ -39,11 +39,11 @@ def compress_block(block : np.ndarray):
   return DC_frequency,compressed_block, huffman_table
 
 
-def process_image(path : str):
+def process_image(path : str, plot: bool):
    obj = Image.open(path).convert('L')
    img = np.array(obj)
    img = img - 128
-   blocks = block_splitting(img)
+   blocks = crop_and_block(img)
    AC_coeffs = []
    DC_coeffs = []
    huffman_tables = []
@@ -67,27 +67,23 @@ def process_image(path : str):
    # hence if we keep only the differences we can use less bits.
    DC_differences = np.diff(DC_coeffs,n=1,prepend=[0])
    DC_differences = np.array([convert_to_binary(x,8) for x in DC_differences])
-
    DC_differences = DC_differences.astype(np.int8)
-
-   # for block in AC_coeffs:
-   #    x = [ np.ceil(np.log2(int(e,2)+1))//8 for e in block]
-   #    print(x)
 
    filename = path.split('.')[0] + '_compressed'
    dist = [len(block) for block in AC_coeffs]
    ratio = (round(sum(dist) / (len(blocks)*64),2))*100
    print(f"Compression ratio: {ratio}%")
-   print(len(huffman_tables))
+
+   print("First written AC block:", AC_coeffs[0])
    encode_JPEG_format(filename,DC_differences,AC_coeffs,huffman_tables)
-   plt.hist(dist,bins=30)
-   plt.title("Distribution of number of codes among blocks");
-   plt.show();
 
 
-   
+   if plot:
+      plt.hist(dist,bins=30)
+      plt.title("Distribution of number of codes among blocks");
+      plt.show();
 
 
 if __name__ == "__main__":
-    #process_image('test\cat_raw.bmp')
+    process_image('test\cat_raw.bmp',False)
     decode_JPEG_format('test\cat_raw_compressed')
