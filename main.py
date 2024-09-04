@@ -74,7 +74,7 @@ def process_image(path : str, plot: bool):
    ratio = (round(sum(dist) / (len(blocks)*64),2))*100
    print(f"Compression ratio: {ratio}%")
 
-   print("First written AC block:", AC_coeffs[0])
+   print("AC block written to memory:", AC_coeffs[0])
    encode_JPEG_format(filename,DC_differences,AC_coeffs,huffman_tables)
 
 

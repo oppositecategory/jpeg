@@ -9,7 +9,6 @@ FLAGS = {
 }
 
 def encode_JPEG_format(filename, encoded_DC, encoded_AC, huffman_tables):
-    bytes = []
     with open(filename, 'wb') as file:
         # Write SOI marker
         file.write(b'\xFF\xD8')
@@ -22,7 +21,6 @@ def encode_JPEG_format(filename, encoded_DC, encoded_AC, huffman_tables):
             for key,value in table.items():
                 key_bytes = struct.pack('>BB',*key) 
                 value_bytes = int(value,2).to_bytes((len(value)+7)//8,byteorder='big')
-                bytes.append((len(value)+7)//8)
 
                 file.write(key_bytes)
                 file.write(b"\x3A")
@@ -62,7 +60,7 @@ def decode_JPEG_format(filename):
                                         raw_binary,
                                         offset=bytes_read)
             RLE = (num_zeros, size)
-            table[RLE] = str(bin(code))
+            table[RLE] = "{0:b}".format(code)
             bytes_read +=4
             current = struct.unpack_from('>H', 
                                          raw_binary,
@@ -76,9 +74,11 @@ def decode_JPEG_format(filename):
                                      offset=bytes_read+2)[0]
 
     
+    bytes_read+=2
     current = struct.unpack_from('>H',
                                  raw_binary,
-                                 offset=bytes_read)
+                                 offset=bytes_read)[0]
+    print("curr", current)
     encoded_AC = []
     for _ in range(blocks_num):
         block = []
@@ -86,7 +86,7 @@ def decode_JPEG_format(filename):
             AC_freq = struct.unpack_from('>B', 
                                          raw_binary,
                                          offset=bytes_read)[0]
-            block.append(bin(AC_freq))
+            block.append("{0:b}".format(AC_freq))
 
             bytes_read+=1
             current = struct.unpack_from('>H', 
@@ -111,7 +111,8 @@ def decode_JPEG_format(filename):
         bytes_read+=1
     
     block = encoded_AC[0]
-    print(block)
+    print("AC block read from memory:",block)
+    #print(huffman_tables[0])
 
 
 
