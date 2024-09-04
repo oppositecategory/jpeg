@@ -1,8 +1,6 @@
 import numpy as np 
 import matplotlib.pyplot as plt 
-from bitarray import bitarray
 
-import struct
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed   
 import os
@@ -10,44 +8,11 @@ import os
 from mini_jpeg.huffman_encoding import *
 from mini_jpeg.cosine_transform import * 
 from mini_jpeg.utils import *
+from mini_jpeg.codec import *
 
 
 NUM_THREADS = os.cpu_count()
-
-def save_data_to_disk(filename, encoded_DC, encoded_AC, huffman_tables):
-    with open(filename, 'wb') as file:
-        # Write SOI marker
-        file.write(b'\xFF\xD8')
-                
-        # AC frequencies segment
-        file.write(b'\xFF\xC4') 
-        for i,block in enumerate(encoded_AC):
-           file.write(b'B\n') 
-           for frequency in block:
-              freq_bytes = int(frequency,2).to_bytes((len(frequency)+7)//8,byteorder='big')
-              file.write(freq_bytes)
-
-        # Huffman tables segment
-        file.write(len(huffman_tables).to_bytes(2, 'big'))  
-        for table in huffman_tables:
-          file.write(b'\xC3')
-          for key,value in table.items():
-             key_bytes = struct.pack('HH',*key) 
-             value_bytes = int(value,2).to_bytes((len(value)+7)//8,byteorder='big')
-
-             file.write(key_bytes)
-             file.write(b"\x3A")
-             file.write(value_bytes)
-
-        # DC frequencies segment
-        file.write(len(encoded_DC).to_bytes(2, 'big'))  # Length of SOS segment
-        for diff in encoded_DC:
-          packed_diff = struct.pack('b',diff)
-          file.write(packed_diff)
-        
-        # Write EOI marker
-        file.write(b'\xFF\xD9')
-
+            
 def compress_block(block : np.ndarray):
   """
     Compression pipeline for a 8x8 block matrix.
@@ -66,15 +31,15 @@ def compress_block(block : np.ndarray):
   block = zigzag(block.flatten())
   DC_frequency = block[0]
 
-  RLE_block = run_length_encoding(block)
+  RLE_block, indices = run_length_encoding(block)
   encoder = HuffmanEncoder(RLE_block)
   huffman_table = encoder.get_codes() 
 
-  compressed_block = np.array([huffman_table[symbol] + convert_to_binary(freq,symbol[1]) for symbol,freq in zip(RLE_block, block)])
+  compressed_block = np.array([huffman_table[symbol] + convert_to_binary(block[i],symbol[1]) for symbol,i in zip(RLE_block, indices)])
   return DC_frequency,compressed_block, huffman_table
 
 
-def process_image(path):
+def process_image(path : str):
    obj = Image.open(path).convert('L')
    img = np.array(obj)
    img = img - 128
@@ -105,19 +70,24 @@ def process_image(path):
 
    DC_differences = DC_differences.astype(np.int8)
 
+   # for block in AC_coeffs:
+   #    x = [ np.ceil(np.log2(int(e,2)+1))//8 for e in block]
+   #    print(x)
 
    filename = path.split('.')[0] + '_compressed'
    dist = [len(block) for block in AC_coeffs]
    ratio = (round(sum(dist) / (len(blocks)*64),2))*100
    print(f"Compression ratio: {ratio}%")
-   save_data_to_disk(filename,DC_differences,AC_coeffs,huffman_tables)
+   print(len(huffman_tables))
+   encode_JPEG_format(filename,DC_differences,AC_coeffs,huffman_tables)
    plt.hist(dist,bins=30)
    plt.title("Distribution of number of codes among blocks");
    plt.show();
+
+
    
 
 
-
-
 if __name__ == "__main__":
-    process_image('test\cat_raw.bmp')
+    #process_image('test\cat_raw.bmp')
+    decode_JPEG_format('test\cat_raw_compressed')

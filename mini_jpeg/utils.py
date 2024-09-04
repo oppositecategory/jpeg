@@ -25,22 +25,25 @@ zigzag_order = [
 
 quantize_block = lambda X: np.round(X/Q)
 
-def zigzag(block):
+def zigzag(block : np.ndarray):
   return np.array([block[index] for index in zigzag_order]).astype(int)
 
-def run_length_encoding(block):
+def run_length_encoding(block : np.ndarray):
   zero_freqs = 0
   SYMBOL = (15,0)
-  EOB = (0,0)
+  #EOB = (0,0)
   codes = []
-  for freq in block.flatten()[1:]:
+  indices = []
+  for i,freq in enumerate(block.flatten()[1:]):
     if freq != 0:
       run_length = zero_freqs
       size = min(15, int(np.ceil(np.log2(np.abs(freq)+1))))
       codes.append((run_length,size))
       zero_freqs = 0
+      indices.append(i+1)
     elif zero_freqs == 16:
       codes.append(SYMBOL)
+      indices.append(i+1)
       zero_freqs = 0
     else:
       zero_freqs+=1
@@ -50,10 +53,10 @@ def run_length_encoding(block):
     if code != SYMBOL:
       break
     codes.pop()
-  codes.append(EOB)
-  return codes
+  #codes.append(EOB)
+  return codes, indices
 
-def block_splitting(img):
+def block_splitting(img : np.ndarray):
   """ Function splits our image into chunks of 8x8 sub-matrices.
       If image's size isn't integer multiples of 8 we pad with the edges values.
   """
