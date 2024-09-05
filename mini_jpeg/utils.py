@@ -84,3 +84,9 @@ def convert_to_binary(x,num_bits=15):
   x = max(min(x, 16383), -16484)
   if x >= 0: return format(x,f'0{num_bits}b')
   return format(x & (2**num_bits - 1),'b')
+
+def format_table(table):
+  for q,v in table.items():
+    v = '0'*(4 - ((len(v) % 4))) + v
+    table[q] = v
+  return table

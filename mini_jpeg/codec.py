@@ -78,7 +78,6 @@ def decode_JPEG_format(filename):
     current = struct.unpack_from('>H',
                                  raw_binary,
                                  offset=bytes_read)[0]
-    print("curr", current)
     encoded_AC = []
     for _ in range(blocks_num):
         block = []
@@ -110,9 +109,6 @@ def decode_JPEG_format(filename):
         encoded_DC.append(freq)
         bytes_read+=1
     
-    block = encoded_AC[0]
-    print("AC block read from memory:",block)
-    #print(huffman_tables[0])
 
 
 

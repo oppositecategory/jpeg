@@ -34,7 +34,7 @@ def compress_block(block : np.ndarray):
   RLE_block, indices = run_length_encoding(block)
   encoder = HuffmanEncoder(RLE_block)
   huffman_table = encoder.get_codes() 
-
+  #huffman_table = {k:(v + '0'*(8 - ((len(v) % 4)))) for k,v in huffman_table.items()}
   compressed_block = np.array([huffman_table[symbol] + convert_to_binary(block[i],symbol[1]) for symbol,i in zip(RLE_block, indices)])
   return DC_frequency,compressed_block, huffman_table
 
@@ -47,11 +47,9 @@ def process_image(path : str, plot: bool):
    AC_coeffs = []
    DC_coeffs = []
    huffman_tables = []
-
-   i = 0
+   i = 0 
    with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
       future_results = {executor.submit(compress_block, block): block for block in blocks}
-
       for future in as_completed(future_results):
          try:
             DC_freq, reduced_block, htable = future.result()
@@ -74,7 +72,6 @@ def process_image(path : str, plot: bool):
    ratio = (round(sum(dist) / (len(blocks)*64),2))*100
    print(f"Compression ratio: {ratio}%")
 
-   print("AC block written to memory:", AC_coeffs[0])
    encode_JPEG_format(filename,DC_differences,AC_coeffs,huffman_tables)
 
 
