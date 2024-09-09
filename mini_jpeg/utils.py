@@ -12,21 +12,54 @@ Q = np.array([[16,11,10,16,24,40,51,61],
               ])
 
 # Matrix of zig-zag inidices for frequency blocks. 
-zigzag_order = [
-    0, 1, 8, 16, 9, 2, 3, 10,
-    17, 24, 32, 25, 18, 11, 4, 5,
-    12, 19, 26, 33, 40, 48, 41, 34,
-    27, 20, 13, 6, 7, 14, 21, 28,
-    35, 42, 49, 50, 43, 36, 29, 22,
-    15, 23, 30, 37, 44, 51, 52, 45,
-    38, 31, 39, 46, 53, 54, 47, 55,
-    56, 57, 58, 59, 60, 61, 62, 63
-]
+indices = np.arange(64).reshape(8,8)
+order = [[] for i in range(8+8-1)]
+
+for i in range(8):
+   for j in range(8):
+      s = i+j
+      if s % 2 == 0:
+         order[s].insert(0,indices[i,j])
+      else:
+         order[s].append(indices[i,j])
+zigzag_order = np.concatenate(order)
 
 quantize_block = lambda X: np.round(X/Q)
 
+def revert_zigzag(X):
+  block = np.zeros((8,8))
+  for i,index in enumerate(zigzag_order):
+    row, col = divmod(index, 8)
+    block[row,col] = X[i]
+  return block 
+
+def decode_AC_block(compressed, huffman_data):
+  sorted_symbols, lens_arr = huffman_data
+  code = 0
+  codes = [0]
+  codes_len = []
+  for i,amount in enumerate(lens_arr):
+    for _ in range(amount):
+      codes_len.append(i+1)
+
+  for i in range(1,len(codes_len)):
+    code = (code+1) << (codes_len[i] - codes_len[i-1])
+    codes.append(code)
+
+  huffman_table = {code:symbol for symbol,code in zip(sorted_symbols,codes)} 
+  decoded_block = []
+  for encoded_symbol,freq in compressed:
+    symbol = huffman_table[encoded_symbol]
+    for _ in range(symbol[0]):
+      decoded_block.append(0)
+    decoded_block.append(freq)
+  for i in range(63-len(decoded_block)):
+    decoded_block.append(0)
+  return decoded_block
+
+
 def zigzag(block : np.ndarray):
-  return np.array([block[index] for index in zigzag_order]).astype(int)
+  return np.array([block[index] for index in zigzag_order]).astype(np.int16)
 
 def run_length_encoding(block : np.ndarray):
   zero_freqs = 0
@@ -49,10 +82,6 @@ def run_length_encoding(block : np.ndarray):
       zero_freqs+=1
 
   # Make sure to remove redundant SYMBOLs.
-  for code in codes[::-1]:
-    if code != SYMBOL:
-      break
-    codes.pop()
   #codes.append(EOB)
   return codes, indices
 
@@ -76,7 +105,7 @@ def crop_and_block(img : np.ndarray):
   M1, N1 = M - (M%8), N - (N%8)
   A = img[:M1, :N1]
   blocks = A.reshape(-1,8,8)
-  return blocks
+  return blocks, (M1,N1)
 
 def convert_to_binary(x,num_bits=15):
   # Note that x can have at most 15 bits, hence bounded by 2^14-1 to it's -2^14.

@@ -1,11 +1,11 @@
 from .data_structures import PriorityQueue, Node
+from collections import Counter
 
 class HuffmanEncoder:
   def __init__(self, data):
     nodes = [Node(data=x) for x in data]
     queue = PriorityQueue(nodes)
     self.root = self.generate_tree(queue)
-
     self.codes = self.depth_first_traverse()
 
   def generate_tree(self,queue):
@@ -72,3 +72,15 @@ class HuffmanEncoder:
 
   def get_codes(self):
     return self.codes
+  
+  def get_canonical_codes(self):
+    table = self.codes
+    sorted_symbols = sorted(table,key = lambda k: len(table[k]))
+    sorted_lens = [len(code) for _,code in table.items()]
+    bucket = Counter(sorted_lens)
+    lens_arr = [
+      bucket[i] if i in bucket else 0 for i in range(1,max(sorted_lens)+1)
+    ]
+    return [sorted_symbols,lens_arr]
+
+    
