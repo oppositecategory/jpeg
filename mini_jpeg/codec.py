@@ -153,25 +153,44 @@ def decode_JPEG_format(filename):
     decoded_DC = np.array(encoded_DC).cumsum()
 
     blocks = []
+    DCT_blocks = []
     for i,block in enumerate(decoded_AC):
         flattened_block = [decoded_DC[i]] + block
         block = revert_zigzag(flattened_block)
         block = block*Q
+        DCT_blocks.append(block)
         block = vectorized_inverse_DCT(block).astype(np.int8)
         blocks.append(block)
-
-    img = np.array(blocks).reshape((m,n))
-    img = img + 128
+    
+    block_var = np.var(blocks,axis=(1,2))
+    rimg = np.array(blocks).reshape((m,n))
+    rimg = rimg + 128
 
     obj = Image.open('test\cat_raw.bmp').convert('L')
     oimg = np.array(obj)
+    oimg = oimg[:m,:n] # We cropped before compression
 
-    fig, axes = plt.subplots(nrows=1, ncols=2)
-    axes[0].imshow(oimg,cmap=plt.get_cmap('gray'))
-    axes[0].set_title("Before compression")
-    axes[1].imshow(img,cmap=plt.get_cmap('gray'))
-    axes[1].set_title("After compression")
+    mse = np.mean((oimg - rimg)**2)
+    max_I = oimg.max()
+    psnr = 20 * np.log10(max_I) - 10 * np.log10(mse)
+
+
+    # Paper of interest:
+    # https://www.cse.iitb.ac.in/~ajitvr/CS754_Spring2017/dct_laplacian.pdf
+
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    fig.subplots_adjust(top=0.8)
+
+    axes[0,0].imshow(oimg,cmap=plt.get_cmap('gray'))
+    axes[0,0].set_title("Original image")
+    axes[0,1].imshow(rimg,cmap=plt.get_cmap('gray'))
+    axes[0,1].set_title("Compressed image")
+    axes[1,0].hist(decoded_DC,bins=200)
+    axes[1,0].set_title("Histogram of DC frequency")
+    axes[1,1].hist(block_var, bins=200)
+    axes[1,1].set_title("Histogram of blocks variance")
     fig.tight_layout()
+    fig.suptitle(f"PSNR: {psnr}",y=1)
     plt.show()
 
     
