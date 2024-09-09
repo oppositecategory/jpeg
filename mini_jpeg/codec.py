@@ -166,7 +166,8 @@ def decode_JPEG_format(filename):
     rimg = np.array(blocks).reshape((m,n))
     rimg = rimg + 128
 
-    obj = Image.open('test\cat_raw.bmp').convert('L')
+    original_name = filename.split('compressed')[0][:-1] + '.bmp'
+    obj = Image.open(original_name).convert('L')
     oimg = np.array(obj)
     oimg = oimg[:m,:n] # We cropped before compression
 
@@ -191,21 +192,4 @@ def decode_JPEG_format(filename):
     axes[1,1].set_title("Histogram of blocks variance")
     fig.tight_layout()
     fig.suptitle(f"PSNR: {psnr}",y=1)
-    plt.show()
-
-    
-    
-    
-
-
-    
-
-
-
-    
-
-    
-    
-
- 
-   
+    plt.show()  

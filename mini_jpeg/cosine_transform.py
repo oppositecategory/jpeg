@@ -1,16 +1,9 @@
 import numpy as np
 from scipy.fftpack import dct,idct
 
-
-def dct2(a):
-    return dct(dct(a.T, norm='ortho').T, norm='ortho')
-
-# implement 2D IDCT
-def idct2(a):
-    return idct(idct(a.T, norm='ortho').T, norm='ortho')    
-
+  
 # Creates the DCT basis matrices. 
-# (1) memory consumption.
+# O(1) memory consumption.
 # G is a 3-D tensor that contains all the 2-D basis matrices for a given 8x8 block.
 # The i entry in G corresponds to the transformation for the (i//8,i%8) frequency.
 DCT = lambda u,v: np.array([

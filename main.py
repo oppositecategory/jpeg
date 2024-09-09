@@ -1,6 +1,4 @@
 import numpy as np 
-import matplotlib.pyplot as plt 
-from scipy.fftpack import dctn
 from tqdm import tqdm
 
 
@@ -17,7 +15,7 @@ from mini_jpeg.codec import *
 
 NUM_THREADS = os.cpu_count()
             
-def compress_block(block : np.ndarray, flag = False):
+def compress_block(block : np.ndarray):
   """
     Compression pipeline for a 8x8 block matrix.
     Pipeline:
@@ -71,7 +69,7 @@ def test_pipeline_block(test,img_shape):
    decode_JPEG_format('test\shimon')
 
 
-def process_image(path : str, plot: bool):
+def process_image(path : str):
    obj = Image.open(path).convert('L')
    img = np.array(obj)
    img = img - 128
@@ -112,13 +110,16 @@ def process_image(path : str, plot: bool):
 
    encode_JPEG_format(filename,DC_differences,AC_coeffs,huffman_tables, img_shape)
 
-   if plot:
-      plt.hist(dist,bins=30)
-      plt.title("Distribution of number of codes among blocks");
-      plt.show();
 
+NAME='cat'
 
+"""
+Optimization ideas:
+- Codec can be improved by handling specific AC frequency byte sizes to reduce memory overhead.
+- Refactor the codec saving format to reduce redundant symbols.
+- Add Numba for processing the DCT.
+- Add multi-processing; allocate subsets of blocks for each core and process the subset of blocks by multi-threading.
+"""
 if __name__ == "__main__":
-    process_image('test\cat_raw.bmp',False)
-    decode_JPEG_format('test\cat_raw_compressed')
-
+    process_image(f'test\{NAME}_raw.bmp')
+    decode_JPEG_format(f'test\{NAME}_raw_compressed')

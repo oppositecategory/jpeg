@@ -81,6 +81,4 @@ class HuffmanEncoder:
     lens_arr = [
       bucket[i] if i in bucket else 0 for i in range(1,max(sorted_lens)+1)
     ]
-    return [sorted_symbols,lens_arr]
-
-    
+    return [sorted_symbols,lens_arr] 
